@@ -1,0 +1,54 @@
+/* Jetons de design communs (portail + pages internes). Actifs seulement avec html.kx-on (cf. settings.js). */
+html.kx-on {
+  --kx-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --kx-bg: #f4f5f7;
+  --kx-surface: #ffffff;
+  --kx-surface-2: #f6f7f9;
+  --kx-surface-3: #eceef2;
+  --kx-border: #e3e6eb;
+  --kx-border-strong: #cfd4dc;
+  --kx-text: #151922;
+  --kx-text-2: #3b4351;
+  --kx-muted: #6a7382;
+  --kx-accent: #2f5bea;
+  --kx-accent-2: #2448c4;
+  --kx-accent-soft: #e8eeff;
+  --kx-on-accent: #ffffff;
+  --kx-ok: #12805c;
+  --kx-ok-soft: #e3f5ee;
+  --kx-warn: #b45309;
+  --kx-warn-soft: #fdf1df;
+  --kx-ko: #c62a2a;
+  --kx-ko-soft: #fde8e8;
+  --kx-head: #10141c;
+  --kx-shadow: 0 1px 2px rgba(16, 20, 28, .05), 0 2px 8px rgba(16, 20, 28, .04);
+  --kx-shadow-lg: 0 8px 30px rgba(16, 20, 28, .10);
+  --kx-radius: 14px;
+  --kx-radius-sm: 9px;
+  --kx-focus: 0 0 0 3px rgba(47, 91, 234, .28);
+}
+html.kx-on[data-kx-theme="dark"] {
+  --kx-bg: #0d1016;
+  --kx-surface: #151a22;
+  --kx-surface-2: #1a2029;
+  --kx-surface-3: #222935;
+  --kx-border: #262d39;
+  --kx-border-strong: #343d4c;
+  --kx-text: #e8ebf1;
+  --kx-text-2: #c3c9d4;
+  --kx-muted: #8f98a8;
+  --kx-accent: #7090ff;
+  --kx-accent-2: #8ea7ff;
+  --kx-accent-soft: #1d2747;
+  --kx-on-accent: #0d1016;
+  --kx-ok: #4cc79a;
+  --kx-ok-soft: #12302a;
+  --kx-warn: #f0a94a;
+  --kx-warn-soft: #33261a;
+  --kx-ko: #f07a7a;
+  --kx-ko-soft: #3a1d22;
+  --kx-head: #090b10;
+  --kx-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  --kx-shadow-lg: 0 10px 34px rgba(0, 0, 0, .45);
+  --kx-focus: 0 0 0 3px rgba(112, 144, 255, .35);
+}

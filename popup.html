@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Kelio – Interface repensée</title>
+<style>
+  :root { color-scheme: light dark; --bg: #ffffff; --fg: #151922; --muted: #6a7382; --line: #e3e6eb; --seg: #eceef2; --on: #ffffff; --accent: #2f5bea; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #151a22; --fg: #e8ebf1; --muted: #8f98a8; --line: #262d39; --seg: #222935; --on: #2c3442; --accent: #7090ff; } }
+  body { width: 290px; margin: 0; padding: 14px; font: 13px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  .h { display: flex; align-items: center; gap: 10px; }
+  .h img { width: 32px; height: 32px; }
+  h1 { font-size: 14px; margin: 0; }
+  p { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+  .row > span { font-weight: 600; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--seg); gap: 2px; }
+  .seg button { border: 0; background: none; color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1; padding: 6px 10px; border-radius: 7px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--on); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .sw { position: relative; width: 36px; height: 20px; flex: none; }
+  .sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .sw i { position: absolute; inset: 0; border-radius: 10px; background: var(--line); transition: background .15s; pointer-events: none; }
+  .sw i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+  .sw input:checked + i { background: var(--accent); }
+  .sw input:checked + i::after { transform: translateX(16px); }
+  .sw input:focus-visible + i { box-shadow: 0 0 0 3px rgba(47, 91, 234, .3); }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="h"><img src="icon48.png" alt=""><h1>Kelio – Interface repensée</h1></div>
+  <p>Nouvel accueil (journée, raccourcis, notifications) et thème moderne sur les déclarations de présence et les absences.</p>
+  <div class="row"><span>Interface repensée</span><label class="sw"><input type="checkbox" id="enabled" aria-label="Activer l'interface repensée"><i></i></label></div>
+  <div class="row"><span>Thème</span>
+    <div class="seg" id="theme" role="group" aria-label="Thème">
+      <button data-v="auto">Auto</button><button data-v="light">Clair</button><button data-v="dark">Sombre</button>
+    </div>
+  </div>
+  <div class="foot"><span>Actif sur lfp.kelio.io</span><span data-mpg-update></span></div>
+  <script src="popup.js"></script>
+  <script src="update.js"></script>
+</body>
+</html>

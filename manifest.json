@@ -1,0 +1,79 @@
+{
+  "manifest_version": 3,
+  "name": "Kelio – Interface repensée",
+  "version": "1.1.4",
+  "description": "Nouvel accueil et nouveau thème clair / sombre pour Kelio (lfp.kelio.io) : déclarations de présence, absences, notifications.",
+  "homepage_url": "https://github.com/frank-mpg/extension_kelio",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "permissions": [
+    "alarms",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Kelio – Interface repensée"
+  },
+  "background": {
+    "service_worker": "autoreload.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://lfp.kelio.io/open/bwt/portail.jsp*"
+      ],
+      "css": [
+        "tokens.css",
+        "portail.css"
+      ],
+      "js": [
+        "settings.js",
+        "home.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://lfp.kelio.io/open/homepage*"
+      ],
+      "all_frames": true,
+      "css": [
+        "tokens.css",
+        "pages.css"
+      ],
+      "js": [
+        "settings.js",
+        "pages.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://lfp.kelio.io/open/bwt/intranet_calendrier_absence.jsp*"
+      ],
+      "all_frames": true,
+      "css": [
+        "tokens.css",
+        "calendar.css"
+      ],
+      "js": [
+        "settings.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://lfp.kelio.io/open/bwt/intranet_calendrier_absence.jsp*"
+      ],
+      "all_frames": true,
+      "js": [
+        "calendar.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}

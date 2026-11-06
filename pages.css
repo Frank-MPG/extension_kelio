@@ -1,0 +1,148 @@
+/* Pages internes Kelio (JSP dans l'iframe du portail : /open/homepage?ACTION=…) :
+   Déclarations de présence, Calendrier / demandes d'absence, Résultats… Classes Kelio d'origine. */
+
+html.kx-on, html.kx-on body { background: var(--kx-bg) !important; }
+html.kx-on body { color: var(--kx-text) !important; font: 13.5px/1.45 var(--kx-font) !important; -webkit-font-smoothing: antialiased; }
+html.kx-on body :is(td, th, div, span, a, p, dt, dd, li, label, input, select, textarea, button) { font-family: var(--kx-font) !important; }
+html.kx-on a { color: var(--kx-accent); }
+
+/* ---------- Mise en page : barre latérale + contenu ---------- */
+html.kx-on #tableContenu { border-collapse: separate !important; border-spacing: 0 !important; width: 100% !important; }
+html.kx-on #tableContenu > tbody > tr > td { vertical-align: top !important; }
+html.kx-on td.grayMenu { background: var(--kx-bg) !important; border: 0 !important; }
+html.kx-on td.colonneGauche { padding: 18px 0 18px 16px !important; width: 230px !important; min-width: 230px !important; }
+html.kx-on #tableContenu > tbody > tr > td:not(.grayMenu) { padding: 18px 20px !important; }
+
+html.kx-on .menuGauche { background: transparent !important; width: auto !important; }
+html.kx-on .menuTopTitle {
+  display: flex !important; align-items: center; gap: 10px; min-height: 44px; height: auto !important;
+  padding: 8px 10px 8px 52px !important; margin: 0 0 12px !important;
+  background-color: var(--kx-surface) !important; background-position: 10px center !important; background-size: 30px auto !important;
+  border: 1px solid var(--kx-border); border-radius: var(--kx-radius);
+  color: var(--kx-text) !important; font-size: 14.5px !important; font-weight: 650 !important; line-height: 1.25 !important; box-shadow: var(--kx-shadow);
+}
+html.kx-on .menu { background: transparent !important; border: 0 !important; margin: 0 0 12px !important; padding: 0 !important; }
+html.kx-on .menuItem { background: transparent !important; border: 0 !important; margin: 0 0 2px !important; padding: 0 !important; border-radius: 9px; height: auto !important; min-height: 0 !important; box-shadow: none !important; }
+html.kx-on .menuItem a {
+  display: block !important; padding: 8px 12px !important; border-radius: 9px; border: 0 !important; line-height: 1.35 !important; height: auto !important;
+  color: var(--kx-text-2) !important; font-size: 13.5px !important; font-weight: 500 !important; text-decoration: none !important; background: transparent !important;
+}
+html.kx-on .menuItem:not(.selectionne) a:hover { background: var(--kx-surface-3) !important; color: var(--kx-text) !important; }
+html.kx-on .menuItem.selectionne { background: var(--kx-accent-soft) !important; box-shadow: none !important; }
+html.kx-on .menuItem.selectionne a { color: var(--kx-accent) !important; font-weight: 650 !important; }
+
+/* Encarts de la barre latérale (Mes demandes, Soldes…) */
+html.kx-on dl.infos, html.kx-on dl.soldes {
+  margin: 0 0 12px !important; padding: 12px 14px !important; width: auto !important;
+  background: var(--kx-surface) !important; border: 1px solid var(--kx-border) !important; border-radius: var(--kx-radius) !important; box-shadow: var(--kx-shadow);
+}
+html.kx-on dl.infos dt, html.kx-on dl.soldes dt { color: var(--kx-text) !important; font-size: 13px !important; font-weight: 650 !important; text-align: left !important; margin: 0 0 6px !important; background: none !important; border: 0 !important; padding: 0 !important; }
+html.kx-on dl.infos dd { margin: 2px 0 0 !important; padding: 0 !important; font-size: 13px !important; }
+html.kx-on dl.infos dd a { font-weight: 600; text-decoration: none !important; }
+html.kx-on dd.etatAccepte a { color: var(--kx-ok) !important; }
+html.kx-on dd.etatRefuse a { color: var(--kx-ko) !important; }
+html.kx-on dd.etatEnAttente a { color: var(--kx-warn) !important; }
+html.kx-on dl.soldes table { width: 100% !important; border-collapse: collapse !important; }
+html.kx-on dl.soldes td { padding: 5px 0 !important; border: 0 !important; border-top: 1px solid var(--kx-border) !important; background: none !important; color: var(--kx-text-2) !important; font-size: 12.5px !important; }
+html.kx-on dl.soldes tr:first-child td { border-top: 0 !important; }
+html.kx-on dl.soldes td.valeur { text-align: right !important; color: var(--kx-text) !important; font-weight: 650 !important; font-variant-numeric: tabular-nums; }
+html.kx-on dl.soldes td.soldeNegatif { color: var(--kx-ko) !important; }
+html.kx-on dl.soldes img.clickable { opacity: .55; }
+html.kx-on dl.soldes ol, html.kx-on dl.soldes ul { list-style: none !important; margin: 0 !important; padding: 0 !important; }
+html.kx-on dl.soldes li { list-style: none !important; }
+html.kx-on[data-kx-theme="dark"] dl.soldes img.clickable { filter: invert(1); }
+
+/* ---------- Contenu ---------- */
+html.kx-on .bandeauOption { background: transparent !important; border: 0 !important; margin: 0 0 6px !important; color: var(--kx-muted) !important; }
+html.kx-on .bandeauOption td { color: var(--kx-muted) !important; font-size: 12.5px !important; background: none !important; border: 0 !important; }
+html.kx-on .bandeauOption td + td { color: var(--kx-text) !important; font-weight: 650 !important; font-size: 13px !important; }
+html.kx-on .barretitre { display: none !important; }
+html.kx-on .help { color: var(--kx-muted) !important; }
+html.kx-on .messagesErreur:not(:empty) { margin: 8px 0 !important; padding: 10px 12px !important; border-radius: 10px; background: var(--kx-ko-soft) !important; color: var(--kx-ko) !important; border: 0 !important; }
+
+/* Zone de filtre (« Afficher les déclarations de la semaine du … OK ») */
+html.kx-on .zoneFiltre { background: var(--kx-surface) !important; border: 1px solid var(--kx-border) !important; border-radius: var(--kx-radius) !important; box-shadow: var(--kx-shadow); padding: 10px 14px !important; margin: 0 0 14px !important; }
+html.kx-on .zoneFiltre table, html.kx-on .zoneFiltre td { background: none !important; border: 0 !important; }
+html.kx-on td.filtre { color: var(--kx-text-2) !important; font-weight: 500; }
+
+/* Champs */
+html.kx-on input[type="text"], html.kx-on input:not([type]), html.kx-on input[type="number"], html.kx-on input[type="password"], html.kx-on select, html.kx-on textarea {
+  background: var(--kx-surface) !important; color: var(--kx-text) !important;
+  border: 1px solid var(--kx-border-strong) !important; border-radius: 8px !important;
+  padding: 4px 8px !important; min-height: 28px; font-size: 13px !important; box-shadow: none !important; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+html.kx-on input[type="text"]:focus, html.kx-on input:not([type]):focus, html.kx-on select:focus, html.kx-on textarea:focus { border-color: var(--kx-accent) !important; box-shadow: var(--kx-focus) !important; }
+html.kx-on input.disabled, html.kx-on input[disabled], html.kx-on input[readonly] { background: var(--kx-surface-2) !important; color: var(--kx-muted) !important; border-color: var(--kx-border) !important; }
+html.kx-on input::placeholder, html.kx-on textarea::placeholder { color: var(--kx-muted) !important; opacity: 1; }
+html.kx-on input[type="checkbox"], html.kx-on input[type="radio"] { accent-color: var(--kx-accent); }
+
+/* Boutons */
+html.kx-on a.boutonAction, html.kx-on input[type="button"], html.kx-on input[type="submit"], html.kx-on button:not([class*="kx-"]) {
+  display: inline-flex !important; align-items: center; justify-content: center; min-height: 32px; height: auto !important; padding: 0 16px !important; width: auto !important;
+  background: var(--kx-accent) !important; background-image: none !important; color: var(--kx-on-accent) !important;
+  border: 0 !important; border-radius: 9px !important; font-size: 13px !important; font-weight: 650 !important; line-height: 32px !important;
+  text-decoration: none !important; cursor: pointer; box-shadow: 0 1px 2px rgba(0, 0, 0, .12) !important; transition: background .15s, transform .05s;
+}
+html.kx-on a.boutonAction:hover, html.kx-on input[type="button"]:hover, html.kx-on input[type="submit"]:hover { background: var(--kx-accent-2) !important; }
+html.kx-on a.boutonAction:active { transform: translateY(1px); }
+html.kx-on a.so-BtnLink { opacity: .8; }
+
+/* ---------- Tableau des déclarations de présence ---------- */
+html.kx-on table.presenceBordered {
+  border-collapse: separate !important; border-spacing: 0 !important; width: 100% !important;
+  background: var(--kx-surface) !important; border: 1px solid var(--kx-border) !important; border-radius: var(--kx-radius) !important;
+  box-shadow: var(--kx-shadow); overflow: hidden;
+}
+html.kx-on table.presenceBordered td { border: 0 !important; background: transparent !important; }
+/* Lignes : une couleur par jour (2 <tr> par jour, cf. pages.js), séparateur entre les jours */
+html.kx-on table.presenceBordered tr.kx-odd > td { background: var(--kx-surface-2) !important; }
+html.kx-on table.presenceBordered tr.kx-day > td { border-top: 1px solid var(--kx-border) !important; }
+html.kx-on table.presenceBordered tr.kx-we > td { color: var(--kx-muted) !important; }
+html.kx-on table.presenceBordered tr.kx-we .etatGtp, html.kx-on table.presenceBordered tr.kx-we a.lien12 * { color: var(--kx-muted) !important; }
+html.kx-on table.presenceBordered tr.kx-today.kx-day > td:first-child { box-shadow: inset 3px 0 0 var(--kx-accent); }
+html.kx-on table.presenceBordered tr.kx-today > td { background: color-mix(in srgb, var(--kx-accent) 6%, var(--kx-surface)) !important; }
+html.kx-on td.headerColonne {
+  background: var(--kx-surface-2) !important; color: var(--kx-muted) !important; border-bottom: 1px solid var(--kx-border) !important;
+  padding: 10px 8px !important; font-size: 11.5px !important; font-weight: 650 !important; text-transform: uppercase; letter-spacing: .5px;
+}
+html.kx-on td.headerColonne div, html.kx-on td.headerColonne * { color: inherit !important; font: inherit !important; background: none !important; border: 0 !important; }
+html.kx-on td.tabPresencePair, html.kx-on td.tabPresenceImpair { background: var(--kx-surface) !important; color: var(--kx-text) !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+html.kx-on td.tabPresenceImpair { background: var(--kx-surface-2) !important; }
+html.kx-on td.tabPresencePair table, html.kx-on td.tabPresenceImpair table, html.kx-on td.tabPresencePair td, html.kx-on td.tabPresenceImpair td { background: transparent !important; }
+html.kx-on table.presenceBordered > tbody > tr:not(:first-child) > td[rowspan] { border-top: 1px solid var(--kx-border) !important; }
+html.kx-on table.presenceBordered a.lien12, html.kx-on table.presenceBordered a.lien12 * { color: var(--kx-text) !important; text-decoration: none !important; font-weight: 600 !important; }
+html.kx-on table.presenceBordered a.lien12:hover * { color: var(--kx-accent) !important; }
+html.kx-on .etatGtp { color: var(--kx-text) !important; font-variant-numeric: tabular-nums; }
+html.kx-on div.inputNonModifiable { color: var(--kx-text) !important; font-weight: 600; font-variant-numeric: tabular-nums; }
+html.kx-on table.presenceBordered input[type="text"] { min-height: 26px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600 !important; }
+html.kx-on table.presenceBordered input[type="text"][id*="ommentaire"], html.kx-on table.presenceBordered input[type="text"][placeholder] { text-align: left; font-weight: 400 !important; }
+html.kx-on table.presenceBordered img { opacity: .7; }
+html.kx-on table.presenceBordered img:hover { opacity: 1; }
+html.kx-on td.tdCalSemaine2 { background: transparent !important; color: var(--kx-text) !important; font-weight: 650 !important; font-size: 14px !important; padding: 4px 0 10px !important; }
+html.kx-on td.tdCalSemaine2 a { display: inline-grid !important; place-items: center; width: 28px; height: 28px; border-radius: 8px; vertical-align: middle; }
+html.kx-on td.tdCalSemaine2 a:hover { background: var(--kx-surface-3); }
+html.kx-on[data-kx-theme="dark"] td.tdCalSemaine2 img { filter: invert(.9); }
+
+/* Barre d'actions (Valider) */
+html.kx-on .action_pnl { background: transparent !important; border: 0 !important; padding: 14px 0 !important; }
+html.kx-on table.tbl_actions, html.kx-on table.tbl_actions td { background: none !important; border: 0 !important; }
+
+/* Légendes */
+html.kx-on fieldset table, html.kx-on fieldset td, html.kx-on .zoneFiltre table:has(td.calendrierMoisLegende) { background: none !important; border: 0 !important; box-shadow: none !important; }
+html.kx-on fieldset legend { color: var(--kx-text) !important; font-weight: 650 !important; padding: 0 6px !important; }
+html.kx-on fieldset, html.kx-on table:has(> tbody > tr > td.calendrierMoisLegende):not(fieldset *, .zoneFiltre *) {
+  background: var(--kx-surface) !important; border: 1px solid var(--kx-border) !important; border-radius: var(--kx-radius) !important; padding: 8px 12px !important; box-shadow: var(--kx-shadow);
+}
+html.kx-on td.calendrierMoisLegende { color: var(--kx-text-2) !important; font-size: 12.5px !important; background: none !important; border: 0 !important; }
+
+/* Calendrier des absences (appli GWT dans une iframe, dessinée en canvas : on l'encadre) */
+html.kx-on iframe[src*="calendrier"] { border: 1px solid var(--kx-border) !important; border-radius: var(--kx-radius) !important; background: #fff !important; box-shadow: var(--kx-shadow); }
+html.kx-on iframe[src*="calendrier"][data-kx-cal] { background: var(--kx-surface) !important; }
+/* En sombre : inversion des luminosités, teintes conservées (hue-rotate) */
+html.kx-on[data-kx-theme="dark"] iframe[src*="calendrier"]:not([data-kx-cal]) { filter: invert(.9) hue-rotate(180deg) saturate(1.15); border-color: #d9d3c6 !important; box-shadow: none; }
+
+/* Mode sombre : icônes noires de Kelio */
+html.kx-on[data-kx-theme="dark"] table.presenceBordered img,
+html.kx-on[data-kx-theme="dark"] td.calendrierMoisLegende img,
+html.kx-on[data-kx-theme="dark"] a.so-BtnLink img { filter: invert(.9) hue-rotate(180deg); }
