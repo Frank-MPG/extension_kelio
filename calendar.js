@@ -329,6 +329,11 @@
   let lastForm = null;
   function dialogForm(ops) {
     const f = readForm(ops);
+    if (f && lastForm && f.title === lastForm.title) {
+      // Redessin partiel : une radio peut manquer au modèle alors qu'elle est toujours affichée
+      const missing = lastForm.radios.filter((r) => !f.radios.some((x) => x.label === r.label)).map((r) => ({ ...r, on: dark(r.ix, r.iy) }));
+      f.radios = [...f.radios, ...missing].sort((a, b) => a.iy - b.iy);
+    }
     if (f) return (lastForm = f);
     if (!lastForm || !ops.length) return null;
     const top = Math.min(...ops.map((o) => o.y)) + 25;
