@@ -187,6 +187,7 @@
     const modal = veil >= 0 && !heads.some((h) => list.indexOf(h.r) > veil);
     let dlg = null, form = null;
     dlgOps = [];
+    if (!modal) lastForm = null;
     if (modal) {
       const after = list.slice(veil + 1).filter((o) => o.w > 0 && o.h > 0);
       dlgOps = after;
@@ -320,29 +321,40 @@
   // Fenêtre Kelio simple (ex. « Quel type de demande… ») : titre, boutons radio (sprite + libellé), boutons.
   // Tout autre contenu (champs, textes libres) → null : la fenêtre d'origine est affichée telle quelle.
   const CANCEL = /^(annuler|fermer)$/i;
+  const pixel = (x, y) => { const d = canvas.getContext('2d').getImageData(Math.round(x), Math.round(y), 1, 1).data; return [d[0], d[1], d[2]]; };
+  const dark = (x, y) => { try { const [r, g, b] = pixel(x, y); return (r * .3 + g * .59 + b * .11) / 255 < .6; } catch { return false; } };
+  // Kelio redessine la fenêtre par morceaux (le modèle perd alors des éléments encore affichés) : la dernière
+  // fenêtre reconnue est gardée tant que ses boutons sont toujours dessinés, l'état des radios est relu dans les pixels
+  let lastForm = null;
   function dialogForm(ops) {
+    const f = readForm(ops);
+    if (f || !lastForm) return (lastForm = f);
+    try {
+      if (!lastForm.buttons.every((b) => { const p = pixel(b.px, b.py), c = rgb(b.c); return p.every((v, i) => Math.abs(v - c[i]) <= 8); })) return (lastForm = null);
+    } catch { return (lastForm = null); }
+    return (lastForm = { ...lastForm, radios: lastForm.radios.map((r) => ({ ...r, on: dark(r.ix, r.iy) })) });
+  }
+  function readForm(ops) {
     if (!ops.length) return null;
     const top = Math.min(...ops.map((o) => o.y)) + 25; // sous la barre de titre
     const texts = ops.filter((o) => o.k === 't');
     const used = new Set(texts.filter((t) => t.y < top));
     const title = [...used].map((t) => t.t.trim()).join(' ');
     const radios = [], buttons = [];
-    const ctx = canvas.getContext('2d');
     for (const i of ops) {
       if (i.k !== 'i' || i.y < top) continue; // croix de fermeture : Annuler / Échap
       const t = texts.find((t) => !used.has(t) && Math.abs(t.y - i.y) <= 5 && t.x > i.x && t.x < i.x + i.w + 20);
       if (!t || i.w > 20 || i.h > 20) return null;
       used.add(t);
-      let on = false;
-      try { const d = ctx.getImageData(Math.round(i.x + i.w / 2), Math.round(i.y + i.h / 2), 1, 1).data; on = lum(`rgb(${d[0]},${d[1]},${d[2]})`) < .6; } catch {}
-      radios.push({ label: t.t.trim(), on, cx: Math.round(t.x + t.w / 2), cy: Math.round(t.y + 8) });
+      const ix = i.x + i.w / 2, iy = i.y + i.h / 2;
+      radios.push({ label: t.t.trim(), on: dark(ix, iy), ix, iy, cx: Math.round(t.x + t.w / 2), cy: Math.round(t.y + 8) });
     }
     for (const r of ops) {
       if (r.k !== 'r' || !r.op || r.y < top || r.h < 16 || r.h > 30 || r.w < 40 || r.w > 200) continue;
       const ts = textIn(r, texts).filter((t) => !used.has(t));
       if (ts.length !== 1) continue;
       used.add(ts[0]);
-      buttons.push({ label: ts[0].t.trim(), ...center(r) });
+      buttons.push({ label: ts[0].t.trim(), ...center(r), px: r.x + 3, py: r.y + 3, c: r.c });
     }
     if (!title || !radios.length || !buttons.length || texts.some((t) => !used.has(t))) return null;
     return { title, radios, buttons };
