@@ -1,8 +1,11 @@
-/* Calendrier des absences repensé (cf. calendar.js). Le canvas Kelio reste en place, masqué ;
-   il réapparaît quand Kelio ouvre une boîte de dialogue (html.kxc-modal). */
+/* Calendrier des absences repensé (cf. calendar.js). Le canvas Kelio reste en place, masqué.
+   Boîte de dialogue Kelio : #kxc est percé à l'emplacement de la fenêtre et assombri (html.kxc-dlg) ;
+   si la zone est inconnue, le canvas d'origine réapparaît en entier (html.kxc-modal). */
 /* Seul le canvas du calendrier est masqué : les autres (fenêtres Kelio) restent visibles */
-html.kx-on.kxc-on:not(.kxc-modal) canvas[data-kxc-main] { visibility: hidden !important; }
+html.kx-on.kxc-on:not(.kxc-modal):not(.kxc-dlg) canvas[data-kxc-main] { visibility: hidden !important; }
 html.kxc-modal #kxc, html:not(.kxc-on) #kxc { display: none !important; }
+html.kxc-dlg #kxc > * { pointer-events: none; }
+html.kxc-dlg #kxc::after { content: ''; position: fixed; inset: 0; z-index: 5; background: rgb(0 0 0 / .35); }
 html.kx-on.kxc-on, html.kx-on.kxc-on body { background: var(--kx-surface) !important; }
 
 #kxc {

@@ -156,14 +156,27 @@
     if (!canvas) return;
     const W = canvas.width, H = canvas.height;
     const rects = list.filter((o) => o.k === 'r'), texts = list.filter((o) => o.k === 't'), imgs = list.filter((o) => o.k === 'i');
-    const modal = rects.some((o) => !o.op && !o.st && o.c !== 'pattern' && o.w >= W * .8 && o.h >= H * .5);
+    // Boîte de dialogue : voile semi-transparent sur tout le canvas ; tout ce qui est dessiné après = la fenêtre
+    let veil = -1;
+    list.forEach((o, i) => { if (o.k === 'r' && !o.op && !o.st && o.c !== 'pattern' && o.w >= W * .8 && o.h >= H * .5) veil = i; });
 
     // En-têtes de mois : rectangles ~113×20 contenant un texte clair en gras
     const heads = rects.filter((r) => r.h >= 18 && r.h <= 22 && r.w >= 80 && r.w <= 160 && !gray(r.c))
       .map((r) => ({ r, t: textIn(r, texts).find((t) => /bold/.test(t.f) && lum(t.c) > .8) }))
       .filter((x) => x.t && MONTHS.includes(x.t.t.trim().split(/\s+/)[0].toLowerCase()))
       .sort((a, b) => a.r.x - b.r.x);
-    if (!heads.length) { model = { modal, ok: false }; return render(); }
+    // Calendrier redessiné par-dessus le voile (sans effacement complet) : dialogue fermé
+    const modal = veil >= 0 && !heads.some((h) => list.indexOf(h.r) > veil);
+    let dlg = null;
+    if (modal) {
+      const after = list.slice(veil + 1).filter((o) => o.w > 0 && o.h > 0);
+      if (after.length) dlg = {
+        x0: Math.min(...after.map((o) => o.x)) - 4, y0: Math.min(...after.map((o) => o.y)) - 4,
+        x1: Math.max(...after.map((o) => o.x + o.w)) + 4, y1: Math.max(...after.map((o) => o.y + o.h)) + 4,
+      };
+    }
+    // Grille masquée par le dialogue : on garde la vue précédente
+    if (!heads.length) { model = modal && model && model.ok ? { ...model, modal, dlg } : { modal, ok: false }; return render(); }
     const headY = heads[0].r.y, top = headY + heads[0].r.h;
 
     // Barre d'outils (au-dessus des en-têtes)
@@ -279,7 +292,7 @@
       c.abs = out;
     }
 
-    model = { ok: true, modal, months, tools, types, tbYear, tbMonth };
+    model = { ok: true, modal, dlg, months, tools, types, tbYear, tbMonth };
     render();
   }
 
@@ -386,12 +399,31 @@
     return ls.some((el) => !base.has(el) && shown(el));
   }
 
+  // Zone de la fenêtre Kelio (coordonnées écran) : #kxc y est percé, le reste de la vue reste affiché.
+  // null = zone inconnue ou plein écran → vue d'origine réaffichée en entier.
+  function hole() {
+    let rs;
+    if (model.modal) {
+      if (!model.dlg || !canvas) return null;
+      const r = canvas.getBoundingClientRect(), sx = r.width / canvas.width, sy = r.height / canvas.height, d = model.dlg;
+      rs = [{ left: r.left + d.x0 * sx, top: r.top + d.y0 * sy, right: r.left + d.x1 * sx, bottom: r.top + d.y1 * sy }];
+    } else {
+      rs = layers().filter((el) => !base.has(el) && shown(el)).map((el) => el.getBoundingClientRect())
+        .filter((r) => r.width < innerWidth * .9 || r.height < innerHeight * .9); // voile GWT plein écran ignoré
+      if (!rs.length) return null;
+    }
+    const h = { x0: Math.min(...rs.map((r) => r.left)), y0: Math.min(...rs.map((r) => r.top)), x1: Math.max(...rs.map((r) => r.right)), y1: Math.max(...rs.map((r) => r.bottom)) };
+    return (h.x1 - h.x0) * (h.y1 - h.y0) < innerWidth * innerHeight * .8 ? h : null;
+  }
+
   function render() {
     if (!document.body) return;
     const on = html.classList.contains('kx-on') && model && model.ok;
     lastOverlay = overlay();
+    const h = on && (model.modal || lastOverlay) ? hole() : null;
     html.classList.toggle('kxc-on', !!on);
-    html.classList.toggle('kxc-modal', !!(model && (model.modal || lastOverlay)));
+    html.classList.toggle('kxc-modal', !!(model && (model.modal || lastOverlay)) && !h);
+    html.classList.toggle('kxc-dlg', !!h);
     try { if (window.frameElement) window.frameElement.toggleAttribute('data-kx-cal', !!on); } catch {}
     if (!on) return;
     if (!root) {
@@ -400,6 +432,7 @@
       document.body.appendChild(root);
     }
     if (!root.isConnected) document.body.appendChild(root);
+    root.style.clipPath = h ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${h.x0}px ${h.y0}px, ${h.x0}px ${h.y1}px, ${h.x1}px ${h.y1}px, ${h.x1}px ${h.y0}px, ${h.x0}px ${h.y0}px)` : '';
     const m = model;
     const first = m.months[0], last = m.months[m.months.length - 1];
     const range = `${cap(MONTHS[first.m])} ${first.y} – ${cap(MONTHS[last.m])} ${last.y}`;
@@ -507,9 +540,11 @@
   let ovTimer = 0;
   const watch = () => new MutationObserver((muts) => {
     if (ovTimer || muts.every((mu) => root && root.contains(mu.target))) return;
-    ovTimer = setTimeout(() => { ovTimer = 0; if (overlay() !== lastOverlay) render(); }, 60);
+    // Calque ouvert : re-rendu à chaque changement (la fenêtre peut bouger ou grandir)
+    ovTimer = setTimeout(() => { ovTimer = 0; if (lastOverlay || overlay() !== lastOverlay) render(); }, 60);
   }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
   if (document.body) watch(); else document.addEventListener('DOMContentLoaded', watch);
+  addEventListener('resize', () => { if (html.classList.contains('kxc-dlg')) render(); });
 
   // Diagnostic (console du cadre intranet_calendrier_absence.jsp) : __kxCalDump('2026-11-20') → ce que
   // Kelio dessine dans la case de ce jour ; __kxCalDump() → modèle + calques présents.
