@@ -322,17 +322,21 @@
   // Tout autre contenu (champs, textes libres) → null : la fenêtre d'origine est affichée telle quelle.
   const CANCEL = /^(annuler|fermer)$/i;
   const pixel = (x, y) => { const d = canvas.getContext('2d').getImageData(Math.round(x), Math.round(y), 1, 1).data; return [d[0], d[1], d[2]]; };
-  const dark = (x, y) => { try { const [r, g, b] = pixel(x, y); return (r * .3 + g * .59 + b * .11) / 255 < .6; } catch { return false; } };
+  const dark = (x, y) => { try { const [r, g, b] = pixel(x, y); return (r * .3 + g * .59 + b * .11) / 255 < .85; /* point de la radio cochée, gris au survol */ } catch { return false; } };
   // Kelio redessine la fenêtre par morceaux (le modèle perd alors des éléments encore affichés) : la dernière
-  // fenêtre reconnue est gardée tant que ses boutons sont toujours dessinés, l'état des radios est relu dans les pixels
+  // fenêtre reconnue (jusqu'à la fin du dialogue) est réutilisée si son titre et ses boutons sont toujours
+  // dessinés ; l'état des radios est relu dans les pixels
   let lastForm = null;
   function dialogForm(ops) {
     const f = readForm(ops);
-    if (f || !lastForm) return (lastForm = f);
+    if (f) return (lastForm = f);
+    if (!lastForm || !ops.length) return null;
+    const top = Math.min(...ops.map((o) => o.y)) + 25;
+    if (ops.some((t) => t.k === 't' && t.y < top && !lastForm.title.includes(t.t.trim()))) return null;
     try {
-      if (!lastForm.buttons.every((b) => { const p = pixel(b.px, b.py), c = rgb(b.c); return p.every((v, i) => Math.abs(v - c[i]) <= 8); })) return (lastForm = null);
-    } catch { return (lastForm = null); }
-    return (lastForm = { ...lastForm, radios: lastForm.radios.map((r) => ({ ...r, on: dark(r.ix, r.iy) })) });
+      if (!lastForm.buttons.every((b) => { const p = pixel(b.px, b.py), c = rgb(b.c); return p.every((v, i) => Math.abs(v - c[i]) <= 8); })) return null;
+    } catch { return null; }
+    return { ...lastForm, radios: lastForm.radios.map((r) => ({ ...r, on: dark(r.ix, r.iy) })) };
   }
   function readForm(ops) {
     if (!ops.length) return null;
@@ -553,7 +557,7 @@
     const title = m ? `${m[1]} ?` : f.title;
     const sub = m ? (m[2] === m[3] ? `Le ${m[2]}` : `Du ${m[2]} au ${m[3]}`) : '';
     const at = (o) => `data-cx="${o.cx}" data-cy="${o.cy}"`;
-    return `<div class="kxc-dlg-back"><div class="kxc-dlg" role="dialog" aria-modal="true" aria-labelledby="kxc-dlg-t">
+    return `<div class="kxc-dlg-back"><div class="kxc-card" role="dialog" aria-modal="true" aria-labelledby="kxc-dlg-t">
       <h2 id="kxc-dlg-t">${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}
       <div class="kxc-opts" role="radiogroup" aria-labelledby="kxc-dlg-t">${f.radios.map((r, i) => `<button type="button" role="radio" aria-checked="${r.on}" class="kxc-opt${r.on ? ' on' : ''}" data-fk="r${i}" ${at(r)}><i></i>${esc(r.label)}</button>`).join('')}</div>
       <div class="kxc-acts">${f.buttons.map((b, i) => `<button type="button" class="kxc-act${CANCEL.test(b.label) ? '' : ' primary'}" data-fk="b${i}" ${at(b)}>${esc(b.label)}</button>`).join('')}</div>
