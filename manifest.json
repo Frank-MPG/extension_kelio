@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kelio – Interface repensée",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "Nouvel accueil et nouveau thème clair / sombre pour Kelio (lfp.kelio.io) : déclarations de présence, absences, notifications.",
   "homepage_url": "https://github.com/frank-mpg/extension_kelio",
   "icons": {

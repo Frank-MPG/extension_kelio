@@ -12,6 +12,9 @@
       el.dataset.kxBgcolor = el.getAttribute('bgcolor');
       el.removeAttribute('bgcolor');
     }
+    for (const a of document.querySelectorAll('a.boutonAction')) {
+      if (/^(annuler|retour|fermer)$/i.test(a.textContent.trim())) a.classList.add('kx-secondary');
+    }
     // Tableau des déclarations : 1 à 2 <tr> par jour (cellules en rowspan). On marque le début de
     // chaque jour (séparateur), l'alternance (fond), le week-end (atténué) et aujourd'hui.
     const today = new Date().toLocaleDateString('fr-FR');

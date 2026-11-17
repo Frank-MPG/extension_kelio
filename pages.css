@@ -151,3 +151,35 @@ html.kx-on[data-kx-theme="dark"] iframe[src*="calendrier"]:not([data-kx-cal]) { 
 html.kx-on[data-kx-theme="dark"] table.presenceBordered img,
 html.kx-on[data-kx-theme="dark"] td.calendrierMoisLegende img,
 html.kx-on[data-kx-theme="dark"] a.so-BtnLink img { filter: invert(.9) hue-rotate(180deg); }
+
+/* ---------- Formulaire de demande (/open/da?ACTION=AJOUTER_FICHES_ABSENCE…) ---------- */
+html.kx-on fieldset.fieldSetAbsence { padding: 12px 18px 16px !important; }
+html.kx-on fieldset.fieldSetAbsence td { padding: 6px 8px !important; vertical-align: middle !important; color: var(--kx-text-2) !important; }
+/* Liste « Motif » (combo Kelio en div) */
+html.kx-on #cmbMotif { height: 32px !important; border: 1px solid var(--kx-border-strong) !important; border-radius: 8px !important; background: var(--kx-surface) !important; cursor: pointer; transition: border-color .15s; }
+html.kx-on #cmbMotif:hover { border-color: var(--kx-accent) !important; }
+html.kx-on #dropDownContent { line-height: 30px !important; padding: 0 8px !important; box-sizing: border-box; color: var(--kx-text) !important; }
+html.kx-on[data-kx-theme="dark"] #dropDownContent img { filter: invert(.9); }
+html.kx-on #dropDown { top: 36px !important; padding: 8px !important; border: 1px solid var(--kx-border) !important; border-radius: 12px !important; background: var(--kx-surface) !important; box-shadow: var(--kx-shadow-lg) !important; color: var(--kx-text) !important; }
+html.kx-on #dropDown > div:first-child { padding: 0 0 8px !important; color: var(--kx-muted) !important; }
+html.kx-on #dropDown > div:nth-child(2) > div { background: var(--kx-surface-2) !important; color: var(--kx-muted) !important; font-size: 11px !important; font-weight: 650 !important; text-transform: uppercase; letter-spacing: .4px; line-height: 26px !important; }
+html.kx-on #dropDown > div:nth-child(3) > div { grid-template-rows: 30px !important; border-bottom: 1px solid var(--kx-border) !important; cursor: pointer; }
+html.kx-on #dropDown > div:nth-child(3) > div:last-child { border-bottom: 0 !important; }
+html.kx-on #dropDown > div:nth-child(3) > div > span { line-height: 30px !important; color: var(--kx-text) !important; }
+html.kx-on #dropDown > div:nth-child(3) > div:hover { background: var(--kx-surface-2) !important; }
+/* Encart « Mes soldes » (styles en ligne : bandeau bleu, fond gris) */
+html.kx-on div:has(> #soldeHeader) {
+  width: auto !important; margin-left: 14px; padding: 0 !important; overflow: hidden;
+  border: 1px solid var(--kx-border) !important; border-radius: var(--kx-radius); background: var(--kx-surface) !important; box-shadow: var(--kx-shadow);
+}
+html.kx-on #soldeHeader { background: none !important; color: var(--kx-text) !important; font-size: 15px !important; font-weight: 650 !important; padding: 14px 16px 2px !important; border-radius: 0 !important; }
+html.kx-on #soldeContent { background: none !important; border-radius: 0 !important; padding: 0 16px 14px !important; min-height: 0 !important; color: var(--kx-muted) !important; font-size: 12px !important; }
+html.kx-on #soldeContent label { color: var(--kx-text-2) !important; margin-right: 8px; }
+html.kx-on #soldes { padding: 10px 0 !important; }
+html.kx-on #soldes > div { margin: 0 0 8px !important; border-radius: 10px; background: var(--kx-surface-2) !important; color: var(--kx-text) !important; }
+html.kx-on #soldes > div * { color: inherit !important; }
+html.kx-on #soldes > div > div:nth-child(3) { color: var(--kx-muted) !important; }
+
+/* Boutons secondaires (Annuler, Retour…) : marqués par pages.js */
+html.kx-on a.boutonAction.kx-secondary { background: var(--kx-surface) !important; color: var(--kx-text) !important; box-shadow: inset 0 0 0 1px var(--kx-border-strong) !important; }
+html.kx-on a.boutonAction.kx-secondary:hover { background: var(--kx-surface-2) !important; }
