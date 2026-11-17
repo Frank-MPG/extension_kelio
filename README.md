@@ -21,4 +21,6 @@ Refonte de Kelio (`lfp.kelio.io`) : nouvel accueil, thème clair / sombre (auto,
   liste d'affichage (un rectangle opaque efface ce qu'il recouvre) et on en déduit mois, jours, absences
   (couleur, code, demi-journée), télétravail, fériés, sélection, légende. Vue HTML à la place (`#kxc`) ; chaque
   action est rejouée sur le canvas aux coordonnées Kelio (avec un mousemove préalable : Kelio clique sur la
-  case survolée). Boîte de dialogue Kelio (voile rgba sur tout le canvas) → canvas d'origine réaffiché.
+  case survolée). Boîte de dialogue Kelio (voile rgba sur tout le canvas, ou nouveau calque DOM / canvas
+  apparu après le premier rendu) → canvas d'origine réaffiché. Demandes en attente (hachures, contour ou
+  rectangle semi-transparent) : jours hachurés. Diagnostic : `__kxCalDump('AAAA-MM-JJ')` dans la console du cadre.

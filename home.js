@@ -38,7 +38,7 @@
 
   // Couleur stable par raccourci
   const PALETTE = ['#4f5bd5', '#0e8fb8', '#0f9488', '#c77a12', '#d63f63', '#7a4fd6', '#16946a', '#52617a'];
-  const NAMED = { 'déclaration': '#0f9488', 'absence': '#c77a12', 'résultats': '#4f5bd5', 'espace rh': '#7a4fd6', 'tâches à traiter': '#d63f63', 'télétravail': '#0e8fb8', 'annuaire': '#52617a' };
+  const NAMED = { 'déclaration': '#0f9488', 'absence': '#c77a12', 'calendrier': '#c77a12', 'résultats': '#4f5bd5', 'espace rh': '#7a4fd6', 'tâches à traiter': '#d63f63', 'télétravail': '#0e8fb8', 'annuaire': '#52617a' };
   const colorOf = (t) => {
     const k = t.toLowerCase();
     if (NAMED[k]) return NAMED[k];
@@ -119,7 +119,8 @@
     }
 
     TT('PortailVignetteLienExec', root).forEach((v, i) => {
-      const [title = '', sub = ''] = leaves(v);
+      let [title = '', sub = ''] = leaves(v);
+      if (/^absences?$/i.test(title)) title = 'Calendrier';
       const im = realImg(v);
       const o = { key: reg('link:' + i, v), title, sub, icon: im ? im.src : '' };
       if (!d.presence && (/^pr[ée]sence$/i.test(title) || /badger/i.test(sub))) d.presence = o;

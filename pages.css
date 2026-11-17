@@ -78,10 +78,15 @@ html.kx-on input::placeholder, html.kx-on textarea::placeholder { color: var(--k
 html.kx-on input[type="checkbox"], html.kx-on input[type="radio"] { accent-color: var(--kx-accent); }
 
 /* Boutons */
-html.kx-on a.boutonAction, html.kx-on input[type="button"], html.kx-on input[type="submit"], html.kx-on button:not([class*="kx-"]) {
+/* Géométrie forcée seulement sur les boutons d'action connus : sur les autres (sélecteurs de date, icônes,
+   boutons des formulaires de demande), elle déformait la mise en page Kelio. */
+html.kx-on a.boutonAction, html.kx-on input[type="submit"], html.kx-on :is(.tbl_actions, .action_pnl) :is(input[type="button"], button:not([class*="kx-"])) {
   display: inline-flex !important; align-items: center; justify-content: center; min-height: 32px; height: auto !important; padding: 0 16px !important; width: auto !important;
+  line-height: 32px !important;
+}
+html.kx-on a.boutonAction, html.kx-on input[type="button"], html.kx-on input[type="submit"], html.kx-on button:not([class*="kx-"]) {
   background: var(--kx-accent) !important; background-image: none !important; color: var(--kx-on-accent) !important;
-  border: 0 !important; border-radius: 9px !important; font-size: 13px !important; font-weight: 650 !important; line-height: 32px !important;
+  border: 0 !important; border-radius: 9px !important; font-size: 13px !important; font-weight: 650 !important;
   text-decoration: none !important; cursor: pointer; box-shadow: 0 1px 2px rgba(0, 0, 0, .12) !important; transition: background .15s, transform .05s;
 }
 html.kx-on a.boutonAction:hover, html.kx-on input[type="button"]:hover, html.kx-on input[type="submit"]:hover { background: var(--kx-accent-2) !important; }

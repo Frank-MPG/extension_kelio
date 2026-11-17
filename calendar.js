@@ -26,13 +26,18 @@
     const c = ctx.canvas;
     if (!(c instanceof HTMLCanvasElement) || !c.isConnected) return false;
     if (c === canvas) return true;
-    if (!canvas || !canvas.isConnected || c.width * c.height > canvas.width * canvas.height) { canvas = c; list = []; return true; }
+    if (!canvas || !canvas.isConnected || c.width * c.height > canvas.width * canvas.height) {
+      if (canvas) canvas.removeAttribute('data-kxc-main');
+      canvas = c; list = []; c.setAttribute('data-kxc-main', '');
+      return true;
+    }
     return false;
   }
   function tr(ctx, x, y, w, h) {
     const m = ctx.getTransform();
     return { x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f, w: w * m.a, h: h * m.d };
   }
+  const col = (s) => (typeof s === 'string' ? s.toLowerCase() : s instanceof CanvasPattern ? 'pattern' : 'gradient');
   const isOpaque = (c, a) => a >= 1 && typeof c === 'string' && (/^#[0-9a-f]{6}$/i.test(c) || /^rgb\(/i.test(c) || /^rgba\(.*,\s*1\s*\)$/i.test(c));
   const inside = (o, r) => o.x >= r.x - .5 && o.y >= r.y - .5 && o.x + o.w <= r.x + r.w + .5 && o.y + o.h <= r.y + r.h + .5;
   function erase(r) {
@@ -51,7 +56,7 @@
         const r = tr(this, x, y, w, h);
         if (r.w < 0) { r.x += r.w; r.w = -r.w; }
         if (r.h < 0) { r.y += r.h; r.h = -r.h; }
-        const c = String(this.fillStyle).toLowerCase();
+        const c = col(this.fillStyle);
         const op = isOpaque(c, this.globalAlpha);
         if (op) erase(r);
         push({ k: 'r', ...r, c, op });
@@ -62,6 +67,19 @@
   P.clearRect = function (x, y, w, h) {
     try { if (mainCanvas(this)) { erase(tr(this, x, y, w, h)); if (!timer) timer = setTimeout(parse, 30); } } catch {}
     return orig.clearRect.apply(this, arguments);
+  };
+  // Contours (une demande en attente peut être dessinée en contour) : jamais opaques, n'effacent rien
+  const strokeRect = P.strokeRect;
+  P.strokeRect = function (x, y, w, h) {
+    try {
+      if (mainCanvas(this)) {
+        const r = tr(this, x, y, w, h);
+        if (r.w < 0) { r.x += r.w; r.w = -r.w; }
+        if (r.h < 0) { r.y += r.h; r.h = -r.h; }
+        push({ k: 'r', ...r, c: col(this.strokeStyle), op: false, st: true });
+      }
+    } catch {}
+    return strokeRect.apply(this, arguments);
   };
   P.fillText = function (text, x, y) {
     try {
@@ -99,12 +117,21 @@
     ['moveTo', function (x, y) { ext(this, x, y); }],
     ['lineTo', function (x, y) { ext(this, x, y); }],
     ['rect', function (x, y, w, h) { ext(this, x, y); ext(this, x + w, y + h); }],
+    ['roundRect', function (x, y, w, h) { ext(this, x, y); ext(this, x + w, y + h); }],
+    ['arcTo', function (x1, y1, x2, y2) { ext(this, x1, y1); ext(this, x2, y2); }],
+    ['quadraticCurveTo', function (cx, cy, x, y) { ext(this, x, y); }],
+    ['bezierCurveTo', function (a, b, c, d, x, y) { ext(this, x, y); }],
     ['fill', function () {
       const b = paths.get(this);
-      if (b && isFinite(b.x0) && mainCanvas(this)) push({ k: 'r', x: b.x0, y: b.y0, w: b.x1 - b.x0, h: b.y1 - b.y0, c: String(this.fillStyle).toLowerCase(), op: false, path: true });
+      if (b && isFinite(b.x0) && mainCanvas(this)) push({ k: 'r', x: b.x0, y: b.y0, w: b.x1 - b.x0, h: b.y1 - b.y0, c: col(this.fillStyle), op: false, path: true });
+    }],
+    ['stroke', function () {
+      const b = paths.get(this);
+      if (b && isFinite(b.x0) && mainCanvas(this)) push({ k: 'r', x: b.x0, y: b.y0, w: b.x1 - b.x0, h: b.y1 - b.y0, c: col(this.strokeStyle), op: false, path: true, st: true });
     }],
   ]) {
     const o = P[name];
+    if (!o) continue;
     P[name] = function () { try { fn.apply(this, arguments); } catch {} return o.apply(this, arguments); };
   }
 
@@ -129,7 +156,7 @@
     if (!canvas) return;
     const W = canvas.width, H = canvas.height;
     const rects = list.filter((o) => o.k === 'r'), texts = list.filter((o) => o.k === 't'), imgs = list.filter((o) => o.k === 'i');
-    const modal = rects.some((o) => !o.op && o.w >= W * .8 && o.h >= H * .5);
+    const modal = rects.some((o) => !o.op && !o.st && o.c !== 'pattern' && o.w >= W * .8 && o.h >= H * .5);
 
     // En-têtes de mois : rectangles ~113×20 contenant un texte clair en gras
     const heads = rects.filter((r) => r.h >= 18 && r.h <= 22 && r.w >= 80 && r.w <= 160 && !gray(r.c))
@@ -210,8 +237,15 @@
       const rx = o.x - c.x;
       if (o.k === 'i') { if (rx >= 12 && rx <= 26) c.tt = 'ok'; continue; }
       if (o.k === 't') continue;
+      // Zone des absences (à droite du libellé « 12 Lu »)
+      const zone = rx >= 40 && o.w >= 12 && o.h >= 8 && o.h <= 18;
+      const half = () => { const full = c.w - 52; return o.w < full * .7 ? (rx + o.w / 2 < 46 + full / 2 ? 'am' : 'pm') : ''; };
+      const code = () => ((textIn(o, texts)[0] || {}).t || '').trim();
+      // Demande en attente : hachures (motif), contour, ou rectangle semi-transparent
+      if (o.st || o.c === 'pattern') { if (zone && (o.c === 'pattern' || lum(o.c) < .97)) c.abs.push({ color: o.c, code: code(), half: half(), pend: o.st ? 'stroke' : 'pattern' }); continue; }
+      if (!o.op && !o.path && zone && !gray(o.c) && lum(o.c) < .97) { c.abs.push({ color: o.c, code: code(), half: half(), pend: 'alpha' }); continue; }
       // Sélection Kelio : bandeau bleu semi-transparent sur le libellé du jour (ou chemin rempli)
-      if ((o.path || !o.op) && o.h >= 14 && !gray(o.c) && lum(o.c) < .97) { c.sel = true; continue; }
+      if ((o.path || !o.op) && rx < 40 && o.h >= 14 && !gray(o.c) && lum(o.c) < .97) { c.sel = true; continue; }
       if (o.path) continue;
       if (red(o.c)) { if (o.w > 20 || o.h > 12) c.holiday = true; continue; }
       // Trait sombre de 2 px en bas de case = vacances scolaires (le trait de 1 px sous le dimanche sépare les semaines)
@@ -221,17 +255,28 @@
       if (rx >= 14 && rx <= 42 && o.w >= 16 && o.h >= 16) { c.tt = c.tt || 'ok'; continue; }
       if (o.w >= 4 && o.w <= 9 && o.h >= 4 && o.h <= 9) { c.repos.push(o.c); continue; }
       if (o.h >= 17 && o.w >= c.w * .5) { c.sel = true; continue; }
-      if (o.h >= 10 && o.h <= 16 && o.w >= 12 && rx >= 40) {
-        const code = (textIn(o, texts)[0] || {}).t || '';
-        const full = c.w - 52;
-        const half = o.w < full * .7 ? (rx + o.w / 2 < 46 + full / 2 ? 'am' : 'pm') : '';
-        c.abs.push({ color: o.c, code: code.trim(), half });
-      }
+      if (o.h >= 10 && o.h <= 16 && o.w >= 12 && rx >= 40) c.abs.push({ color: o.c, code: code(), half: half() });
     }
-    // Sélection Kelio en cours : rectangle plein d'une couleur absente de la légende, sans code
+    // Type de la légende : couleur exacte, même teinte RVB (version rgba) ou même code
+    const tys = Object.values(types);
+    const typeOf = (a) => types[a.color] || (a.color !== 'pattern' && tys.find((t) => rgb(t.color).join() === rgb(a.color).join())) || (a.code && tys.find((t) => t.code === a.code)) || null;
+    // Sélection Kelio en cours : rectangle d'une couleur absente de la légende, sans code
     for (const c of cells.values()) {
-      if (c.abs.some((a) => !a.code && !types[a.color])) c.sel = true;
-      c.abs = c.abs.filter((a) => a.code || types[a.color]);
+      const keep = (a) => a.code || typeOf(a) || a.pend === 'pattern' || a.pend === 'stroke';
+      if (c.abs.some((a) => !keep(a))) c.sel = true;
+      c.abs = c.abs.filter(keep);
+      for (const a of c.abs) if (a.pend) a.color = (typeOf(a) || {}).color || (a.color === 'pattern' ? '#94a3b8' : a.color);
+      // Hachures par-dessus un rectangle de la même absence : un seul élément, en attente
+      const out = [];
+      for (const a of c.abs) {
+        if (a.pend === 'stroke') continue;
+        const b = out.find((x) => x.half === a.half && (x.color === a.color || (a.code && x.code === a.code)));
+        if (!b) out.push(a);
+        else { b.pend = b.pend || a.pend; b.code = b.code || a.code; }
+      }
+      // Un contour seul (sans rectangle plein sur la même demi-journée) = demande en attente ; sinon simple bordure
+      for (const a of c.abs) if (a.pend === 'stroke' && !out.some((x) => !x.half || !a.half || x.half === a.half)) out.push(a);
+      c.abs = out;
     }
 
     model = { ok: true, modal, months, tools, types, tbYear, tbMonth };
@@ -258,7 +303,7 @@
   function dayTitle(date, c, types) {
     const parts = [cap(date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))];
     if (c.holiday) parts.push('Férié');
-    for (const a of c.abs) parts.push(((types[a.color] || {}).label || a.code || 'Absence').toLowerCase().replace(/^./, (x) => x.toUpperCase()) + (a.half ? (a.half === 'am' ? ' (matin)' : ' (après-midi)') : ''));
+    for (const a of c.abs) parts.push(((types[a.color] || {}).label || a.code || 'Absence').toLowerCase().replace(/^./, (x) => x.toUpperCase()) + (a.half ? (a.half === 'am' ? ' (matin)' : ' (après-midi)') : '') + (a.pend ? ' – en attente' : ''));
     if (c.repos.length) parts.push('Absence non comptabilisée (repos ou férié)');
     if (c.tt === 'ok') parts.push('Télétravail');
     if (c.tt === 'nc') parts.push('Télétravail non comptabilisé');
@@ -286,10 +331,13 @@
       if (`${mo.y}-${mo.m}-${d}` === todayKey) cls.push('today');
       let style = '';
       const full = c.abs.find((a) => !a.half), am = c.abs.find((a) => a.half === 'am'), pm = c.abs.find((a) => a.half === 'pm');
+      const pend = c.abs.find((a) => a.pend);
+      if (pend && c.abs.every((a) => a.pend)) cls.push('pend');
       if (full) { cls.push('abs'); style = `--a:${full.color};--b:${full.color}`; }
       else if (am || pm) { cls.push('abs', 'half'); style = `--a:${am ? am.color : 'transparent'};--b:${pm ? pm.color : 'transparent'}`; }
       const code = c.abs.map((a) => a.code || (types[a.color] || {}).code).filter(Boolean);
       const cx = Math.round(c.x + 8), cy = Math.round(c.y + 10);
+      if (pend) style += `${style ? ';' : ''}--p:${pend.color}`;
       cells += `<button type="button" class="${cls.join(' ')}" style="${style}" data-cx="${cx}" data-cy="${cy}" title="${esc(dayTitle(date, c, types))}">
         <b>${d}</b>${code.length ? ((t) => `<small${t.length > 4 ? ' class="long"' : ''}>${esc(t)}</small>`)([...new Set(code)].join('·')) : ''}
         ${c.tt ? `<i class="kxc-tt ${c.tt}">${I.home}</i>` : ''}${c.repos.length ? `<i class="kxc-rep" style="--r:${c.repos[0]}"></i>` : ''}
@@ -305,6 +353,7 @@
   function counts(m) {
     const out = {};
     for (const mo of m.months) for (const c of mo.days) for (const a of c.abs) {
+      if (a.pend) continue;
       const k = a.color;
       out[k] = (out[k] || 0) + (a.half ? .5 : 1);
     }
@@ -314,11 +363,35 @@
   const fmtN = (n) => String(n).replace('.', ',');
   const ttKey = 'kxc-tt-on-sprite';
 
+  // Fenêtres Kelio hors du canvas principal (popup DOM, second canvas) : elles seraient sous #kxc.
+  // Les calques visibles au premier rendu (décor permanent) sont ignorés ; tout calque qui apparaît
+  // ensuite est traité comme une boîte de dialogue (vue d'origine réaffichée).
+  let base = null, lastOverlay = false;
+  function layers() {
+    const out = [];
+    for (const el of document.body.children) if (el !== root && !(canvas && el.contains(canvas)) && !/^(SCRIPT|STYLE|LINK|META|NOSCRIPT|TEMPLATE)$/.test(el.tagName)) out.push(el);
+    for (const c of document.getElementsByTagName('canvas')) if (c !== canvas && !out.some((e) => e.contains(c))) out.push(c);
+    return out;
+  }
+  function shown(el) {
+    const r = el.getBoundingClientRect();
+    if (r.width < 120 || r.height < 60 || r.right <= 0 || r.bottom <= 0 || r.left >= innerWidth || r.top >= innerHeight) return false;
+    const cs = getComputedStyle(el);
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity > 0;
+  }
+  function overlay() {
+    if (!document.body || !model || !model.ok) return false;
+    const ls = layers();
+    if (!base) { base = new WeakSet(ls.filter(shown)); return false; }
+    return ls.some((el) => !base.has(el) && shown(el));
+  }
+
   function render() {
     if (!document.body) return;
     const on = html.classList.contains('kx-on') && model && model.ok;
+    lastOverlay = overlay();
     html.classList.toggle('kxc-on', !!on);
-    html.classList.toggle('kxc-modal', !!(model && model.modal));
+    html.classList.toggle('kxc-modal', !!(model && (model.modal || lastOverlay)));
     try { if (window.frameElement) window.frameElement.toggleAttribute('data-kx-cal', !!on); } catch {}
     if (!on) return;
     if (!root) {
@@ -359,6 +432,7 @@
       </header>
       <div class="kxc-legend">
         ${types.map((ty) => `<span class="kxc-lg" style="--c:${ty.color}"><i></i><b>${esc(ty.code)}</b>${esc(ty.label.toLowerCase().replace(/^./, (x) => x.toUpperCase()))}${cnt[ty.color] ? `<em>${fmtN(cnt[ty.color])} j</em>` : ''}</span>`).join('')}
+        ${m.months.some((mo) => mo.days.some((c) => c.abs.some((a) => a.pend))) ? '<span class="kxc-lg kxc-lg-pend"><i></i>En attente</span>' : ''}
         <span class="kxc-lg kxc-lg-tt"><i>${I.home}</i>Télétravail</span>
         <span class="kxc-lg kxc-lg-hol"><i></i>Férié</span>
         <span class="kxc-lg kxc-lg-school"><i></i>Vacances scolaires</span>
@@ -429,5 +503,28 @@
 
   // Activation / thème (html.kx-on et data-kx-theme posés par settings.js)
   new MutationObserver(() => render()).observe(html, { attributes: true, attributeFilter: ['class', 'data-kx-theme'] });
-  window.__kxCalDump = (x, y, w, h) => ({ model, ops: x == null ? list.length : list.filter((o) => o.x >= x && o.x < x + w && o.y >= y && o.y < y + h) });
+  // Apparition / disparition d'un calque Kelio (popup) : on ne re-rend que si l'état change
+  let ovTimer = 0;
+  const watch = () => new MutationObserver((muts) => {
+    if (ovTimer || muts.every((mu) => root && root.contains(mu.target))) return;
+    ovTimer = setTimeout(() => { ovTimer = 0; if (overlay() !== lastOverlay) render(); }, 60);
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+  if (document.body) watch(); else document.addEventListener('DOMContentLoaded', watch);
+
+  // Diagnostic (console du cadre intranet_calendrier_absence.jsp) : __kxCalDump('2026-11-20') → ce que
+  // Kelio dessine dans la case de ce jour ; __kxCalDump() → modèle + calques présents.
+  window.__kxCalDump = (date) => {
+    const info = (el) => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return { tag: el.tagName, id: el.id, cls: String(el.className), type: el.getAttribute('type'), rect: [r.x, r.y, r.width, r.height].map(Math.round), z: cs.zIndex, pos: cs.position, vis: cs.visibility, disp: cs.display, base: !!(base && base.has(el)) }; };
+    const out = { modal: model && model.modal, overlay: overlay(), types: model && model.types, layers: document.body ? layers().map(info) : [], canvas: canvas && info(canvas),
+      // Popups éventuels à l'intérieur du conteneur du canvas (non couverts par layers())
+      positioned: document.body ? [...document.body.querySelectorAll('*')].filter((el) => !(root && root.contains(el)) && /absolute|fixed/.test(getComputedStyle(el).position) && shown(el)).slice(0, 40).map(info) : [] };
+    if (!date || !model || !model.ok) return { ...out, model };
+    const m = String(date).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/) || String(date).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!m) return 'Date attendue : AAAA-MM-JJ ou JJ/MM/AAAA';
+    const [y, mo, d] = m[1].length === 4 ? [+m[1], +m[2] - 1, +m[3]] : [+m[3], +m[2] - 1, +m[1]];
+    const month = model.months.find((x) => x.y === y && x.m === mo);
+    const c = month && month.days.find((x) => x.d === d);
+    if (!c) return { ...out, error: 'Jour non affiché dans le calendrier', months: model.months.map((x) => `${x.m + 1}/${x.y}`) };
+    return { ...out, cell: c, ops: list.filter((o) => { const oy = o.k === 't' ? o.base - 1 : o.y + .5; return o.x + (o.w || 0) > c.x && o.x < c.x + c.w && oy >= c.y && oy < c.y + c.h; }) };
+  };
 })();
