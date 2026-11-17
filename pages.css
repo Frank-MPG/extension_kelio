@@ -166,6 +166,9 @@ html.kx-on #dropDown > div:nth-child(2) > div { background: var(--kx-surface-2) 
 html.kx-on #dropDown > div:nth-child(3) > div { grid-template-rows: 30px !important; border-bottom: 1px solid var(--kx-border) !important; cursor: pointer; }
 html.kx-on #dropDown > div:nth-child(3) > div:last-child { border-bottom: 0 !important; }
 html.kx-on #dropDown > div:nth-child(3) > div > span { line-height: 30px !important; color: var(--kx-text) !important; }
+html.kx-on #dropDown { height: auto !important; }
+html.kx-on #dropDown > div:nth-child(3) { height: auto !important; max-height: min(330px, 60vh) !important; overflow: auto !important; }
+html.kx-on #dropDown > div:nth-child(3) > div > span:first-child { display: grid !important; place-items: center; }
 html.kx-on #dropDown > div:nth-child(3) > div:hover { background: var(--kx-surface-2) !important; }
 /* Encart « Mes soldes » (styles en ligne : bandeau bleu, fond gris) */
 html.kx-on div:has(> #soldeHeader) {

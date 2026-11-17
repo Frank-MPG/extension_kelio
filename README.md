@@ -11,7 +11,7 @@ Refonte de Kelio (`lfp.kelio.io`) : nouvel accueil, thème clair / sombre (auto,
   (`fire()` : point central → `elementFromPoint` → pointer/mouse events). Un `MutationObserver` re-rend
   la vue quand Kelio change son DOM. Bouton « Vue Kelio » : retour temporaire à l'accueil d'origine.
 - Attention : la feuille GWT impose `div { position: absolute; overflow: hidden }` (corrigé dans `#kx-home`).
-- **Pages internes** (`/open/homepage?ACTION=…`, JSP dans l'iframe) : `pages.css` sur les classes Kelio
+- **Pages internes** (tout `/open/*` hors `/open/bwt/` : `/open/homepage?ACTION=…`, formulaire de demande `/open/da?ACTION=…`, JSP dans l'iframe) : `pages.css` sur les classes Kelio
   (`menuGauche`, `presenceBordered`, `zoneFiltre`, `boutonAction`…), `pages.js` pour les lignes du tableau
   des déclarations (jour, alternance, week-end, aujourd'hui).
 - `settings.js` (tous les cadres) : `html.kx-on` + `html[data-kx-theme]`, depuis `chrome.storage.sync`
