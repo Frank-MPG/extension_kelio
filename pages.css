@@ -1,4 +1,4 @@
-/* Pages internes Kelio (JSP dans l'iframe du portail : /open/homepage?ACTION=…) :
+/* Pages internes Kelio (JSP dans l'iframe du portail : /open/homepage?ACTION=…, /open/da?ACTION=… ; tout /open/* hors /open/bwt/) :
    Déclarations de présence, Calendrier / demandes d'absence, Résultats… Classes Kelio d'origine. */
 
 html.kx-on, html.kx-on body { background: var(--kx-bg) !important; }
