@@ -45,6 +45,15 @@
     if (r.w >= canvas.width - 2 && r.h >= canvas.height - 2) { list = []; return; }
     list = list.filter((o) => !inside(o, r));
   }
+  // Zone de découpe courante (ctx.clip) : Kelio redessine une partie de ses fenêtres sous clip ; un rectangle
+  // opaque n'efface alors que l'intersection (sinon les boutons non redessinés disparaîtraient du modèle)
+  const clips = new WeakMap();
+  const clipOf = (ctx) => { let s = clips.get(ctx); if (!s) clips.set(ctx, s = { r: null, stack: [] }); return s; };
+  const inter = (a, c) => {
+    if (!c) return a;
+    const x = Math.max(a.x, c.x), y = Math.max(a.y, c.y);
+    return { x, y, w: Math.max(0, Math.min(a.x + a.w, c.x + c.w) - x), h: Math.max(0, Math.min(a.y + a.h, c.y + c.h) - y) };
+  };
   function push(o) {
     list.push(o);
     if (!timer) timer = setTimeout(parse, 30);
@@ -58,14 +67,14 @@
         if (r.h < 0) { r.y += r.h; r.h = -r.h; }
         const c = col(this.fillStyle);
         const op = isOpaque(c, this.globalAlpha);
-        if (op) erase(r);
+        if (op) erase(inter(r, clipOf(this).r));
         push({ k: 'r', ...r, c, op });
       }
     } catch {}
     return orig.fillRect.apply(this, arguments);
   };
   P.clearRect = function (x, y, w, h) {
-    try { if (mainCanvas(this)) { erase(tr(this, x, y, w, h)); if (!timer) timer = setTimeout(parse, 30); } } catch {}
+    try { if (mainCanvas(this)) { erase(inter(tr(this, x, y, w, h), clipOf(this).r)); if (!timer) timer = setTimeout(parse, 30); } } catch {}
     return orig.clearRect.apply(this, arguments);
   };
   // Contours (une demande en attente peut être dessinée en contour) : jamais opaques, n'effacent rien
@@ -121,6 +130,14 @@
     ['arcTo', function (x1, y1, x2, y2) { ext(this, x1, y1); ext(this, x2, y2); }],
     ['quadraticCurveTo', function (cx, cy, x, y) { ext(this, x, y); }],
     ['bezierCurveTo', function (a, b, c, d, x, y) { ext(this, x, y); }],
+    ['save', function () { const s = clipOf(this); s.stack.push(s.r); }],
+    ['restore', function () { const s = clipOf(this); if (s.stack.length) s.r = s.stack.pop(); }],
+    ['clip', function (p) {
+      const b = paths.get(this);
+      if ((p && typeof p === 'object') || !b || !isFinite(b.x0)) return; // clip(Path2D) : non suivi
+      const s = clipOf(this);
+      s.r = inter({ x: b.x0, y: b.y0, w: b.x1 - b.x0, h: b.y1 - b.y0 }, s.r);
+    }],
     ['fill', function () {
       const b = paths.get(this);
       if (b && isFinite(b.x0) && mainCanvas(this)) push({ k: 'r', x: b.x0, y: b.y0, w: b.x1 - b.x0, h: b.y1 - b.y0, c: col(this.fillStyle), op: false, path: true });
@@ -168,18 +185,19 @@
       .sort((a, b) => a.r.x - b.r.x);
     // Calendrier redessiné par-dessus le voile (sans effacement complet) : dialogue fermé
     const modal = veil >= 0 && !heads.some((h) => list.indexOf(h.r) > veil);
-    let dlg = null;
+    let dlg = null, form = null;
     dlgOps = [];
     if (modal) {
       const after = list.slice(veil + 1).filter((o) => o.w > 0 && o.h > 0);
       dlgOps = after;
+      form = dialogForm(after);
       if (after.length) dlg = {
         x0: Math.min(...after.map((o) => o.x)) - 4, y0: Math.min(...after.map((o) => o.y)) - 4,
         x1: Math.max(...after.map((o) => o.x + o.w)) + 4, y1: Math.max(...after.map((o) => o.y + o.h)) + 4,
       };
     }
     // Grille masquée par le dialogue : on garde la vue précédente
-    if (!heads.length) { model = modal && model && model.ok ? { ...model, modal, dlg } : { modal, ok: false }; return render(); }
+    if (!heads.length) { model = modal && model && model.ok ? { ...model, modal, dlg, form } : { modal, ok: false }; return render(); }
     const headY = heads[0].r.y, top = headY + heads[0].r.h;
 
     // Barre d'outils (au-dessus des en-têtes)
@@ -295,8 +313,39 @@
       c.abs = out;
     }
 
-    model = { ok: true, modal, dlg, months, tools, types, tbYear, tbMonth };
+    model = { ok: true, modal, dlg, form, months, tools, types, tbYear, tbMonth };
     render();
+  }
+
+  // Fenêtre Kelio simple (ex. « Quel type de demande… ») : titre, boutons radio (sprite + libellé), boutons.
+  // Tout autre contenu (champs, textes libres) → null : la fenêtre d'origine est affichée telle quelle.
+  const CANCEL = /^(annuler|fermer)$/i;
+  function dialogForm(ops) {
+    if (!ops.length) return null;
+    const top = Math.min(...ops.map((o) => o.y)) + 25; // sous la barre de titre
+    const texts = ops.filter((o) => o.k === 't');
+    const used = new Set(texts.filter((t) => t.y < top));
+    const title = [...used].map((t) => t.t.trim()).join(' ');
+    const radios = [], buttons = [];
+    const ctx = canvas.getContext('2d');
+    for (const i of ops) {
+      if (i.k !== 'i' || i.y < top) continue; // croix de fermeture : Annuler / Échap
+      const t = texts.find((t) => !used.has(t) && Math.abs(t.y - i.y) <= 5 && t.x > i.x && t.x < i.x + i.w + 20);
+      if (!t || i.w > 20 || i.h > 20) return null;
+      used.add(t);
+      let on = false;
+      try { const d = ctx.getImageData(Math.round(i.x + i.w / 2), Math.round(i.y + i.h / 2), 1, 1).data; on = lum(`rgb(${d[0]},${d[1]},${d[2]})`) < .6; } catch {}
+      radios.push({ label: t.t.trim(), on, cx: Math.round(t.x + t.w / 2), cy: Math.round(t.y + 8) });
+    }
+    for (const r of ops) {
+      if (r.k !== 'r' || !r.op || r.y < top || r.h < 16 || r.h > 30 || r.w < 40 || r.w > 200) continue;
+      const ts = textIn(r, texts).filter((t) => !used.has(t));
+      if (ts.length !== 1) continue;
+      used.add(ts[0]);
+      buttons.push({ label: ts[0].t.trim(), ...center(r) });
+    }
+    if (!title || !radios.length || !buttons.length || texts.some((t) => !used.has(t))) return null;
+    return { title, radios, buttons };
   }
 
   // ---------- Rendu ----------
@@ -423,9 +472,10 @@
     if (!document.body) return;
     const on = html.classList.contains('kx-on') && model && model.ok;
     lastOverlay = overlay();
-    const h = on && (model.modal || lastOverlay) ? hole() : null;
+    const form = on && model.modal && model.form;
+    const h = on && (model.modal || lastOverlay) && !form ? hole() : null;
     html.classList.toggle('kxc-on', !!on);
-    html.classList.toggle('kxc-modal', !!(model && (model.modal || lastOverlay)) && !h);
+    html.classList.toggle('kxc-modal', !!(model && (model.modal || lastOverlay)) && !h && !form);
     html.classList.toggle('kxc-dlg', !!h);
     try { if (window.frameElement) window.frameElement.toggleAttribute('data-kx-cal', !!on); } catch {}
     if (!on) return;
@@ -453,6 +503,7 @@
     const types = Object.values(m.types);
     const t = (k, label, icon, extra = '') => m.tools[k] ? `<button type="button" class="kxc-btn${extra}" data-cx="${m.tools[k].cx}" data-cy="${m.tools[k].cy}" title="${esc(label)}" aria-label="${esc(label)}">${icon}</button>` : '';
     const scroll = root.scrollTop;
+    const act = document.activeElement, fk = act && root.contains(act) && act.dataset.fk;
     root.innerHTML = `
       <header class="kxc-bar">
         <div class="kxc-nav">
@@ -474,8 +525,27 @@
         <span class="kxc-lg kxc-lg-school"><i></i>Vacances scolaires</span>
       </div>
       <div class="kxc-months">${m.months.map((mo) => monthHTML(mo, m.types)).join('')}</div>
-      <p class="kxc-hint">Clic sur un jour pour le sélectionner, double-clic sur le dernier jour de la période pour créer une demande.</p>`;
+      <p class="kxc-hint">Clic sur un jour pour le sélectionner, double-clic sur le dernier jour de la période pour créer une demande.</p>
+      ${form ? formHTML(form) : ''}`;
     root.scrollTop = scroll;
+    if (form) {
+      // Focus conservé d'un rendu à l'autre (radio → radio cochée)
+      const el = (fk && fk[0] !== 'r' && root.querySelector(`[data-fk="${fk}"]`)) || root.querySelector('.kxc-opt.on') || root.querySelector('.kxc-opt');
+      if (el) el.focus({ preventScroll: true });
+    }
+  }
+
+  function formHTML(f) {
+    // « … pour la période du 10/12/2026 au 10/12/2026 ? » → titre court + période
+    const m = f.title.match(/^(.*?)\s+pour la période du (\S+) au (\S+)\s*\?$/i);
+    const title = m ? `${m[1]} ?` : f.title;
+    const sub = m ? (m[2] === m[3] ? `Le ${m[2]}` : `Du ${m[2]} au ${m[3]}`) : '';
+    const at = (o) => `data-cx="${o.cx}" data-cy="${o.cy}"`;
+    return `<div class="kxc-dlg-back"><div class="kxc-dlg" role="dialog" aria-modal="true" aria-labelledby="kxc-dlg-t">
+      <h2 id="kxc-dlg-t">${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}
+      <div class="kxc-opts" role="radiogroup" aria-labelledby="kxc-dlg-t">${f.radios.map((r, i) => `<button type="button" role="radio" aria-checked="${r.on}" class="kxc-opt${r.on ? ' on' : ''}" data-fk="r${i}" ${at(r)}><i></i>${esc(r.label)}</button>`).join('')}</div>
+      <div class="kxc-acts">${f.buttons.map((b, i) => `<button type="button" class="kxc-act${CANCEL.test(b.label) ? '' : ' primary'}" data-fk="b${i}" ${at(b)}>${esc(b.label)}</button>`).join('')}</div>
+    </div></div>`;
   }
 
   // ---------- Rejeu des actions sur le canvas ----------
@@ -533,9 +603,24 @@
       if (!el) return;
       if (el.dataset.kxc === 'today') { if (type === 'click') goToday(); return; }
       if (!FWD.has(type)) return;
+      if (type === 'click' && e.detail === 0) return clickAt({ cx: +el.dataset.cx, cy: +el.dataset.cy }); // clavier
       fire(type, +el.dataset.cx, +el.dataset.cy, e);
     }, { capture: true, passive: /^(wheel|touch)/.test(type) });
   }
+
+  addEventListener('keydown', (e) => {
+    const f = html.classList.contains('kxc-on') && model && model.ok && model.modal && model.form;
+    if (!f) return;
+    let p = null;
+    if (e.key === 'Escape') p = f.buttons.find((b) => CANCEL.test(b.label));
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const i = Math.max(0, f.radios.findIndex((r) => r.on)), n = f.radios.length;
+      p = f.radios[(i + (e.key === 'ArrowDown' ? 1 : n - 1)) % n];
+    }
+    if (!p) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    clickAt(p);
+  }, true);
 
   // Activation / thème (html.kx-on et data-kx-theme posés par settings.js)
   new MutationObserver(() => render()).observe(html, { attributes: true, attributeFilter: ['class', 'data-kx-theme'] });
