@@ -150,6 +150,7 @@
   const textIn = (r, ts) => ts.filter((t) => t.x >= r.x - 2 && t.x < r.x + r.w && t.base > r.y && t.base <= r.y + r.h + 2);
 
   let model = null;
+  let dlgOps = [];
 
   function parse() {
     timer = 0;
@@ -168,8 +169,10 @@
     // Calendrier redessiné par-dessus le voile (sans effacement complet) : dialogue fermé
     const modal = veil >= 0 && !heads.some((h) => list.indexOf(h.r) > veil);
     let dlg = null;
+    dlgOps = [];
     if (modal) {
       const after = list.slice(veil + 1).filter((o) => o.w > 0 && o.h > 0);
+      dlgOps = after;
       if (after.length) dlg = {
         x0: Math.min(...after.map((o) => o.x)) - 4, y0: Math.min(...after.map((o) => o.y)) - 4,
         x1: Math.max(...after.map((o) => o.x + o.w)) + 4, y1: Math.max(...after.map((o) => o.y + o.h)) + 4,
@@ -550,7 +553,7 @@
   // Kelio dessine dans la case de ce jour ; __kxCalDump() → modèle + calques présents.
   window.__kxCalDump = (date) => {
     const info = (el) => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return { tag: el.tagName, id: el.id, cls: String(el.className), type: el.getAttribute('type'), rect: [r.x, r.y, r.width, r.height].map(Math.round), z: cs.zIndex, pos: cs.position, vis: cs.visibility, disp: cs.display, base: !!(base && base.has(el)) }; };
-    const out = { modal: model && model.modal, overlay: overlay(), types: model && model.types, layers: document.body ? layers().map(info) : [], canvas: canvas && info(canvas),
+    const out = { modal: model && model.modal, dlg: model && model.dlg, dlgOps, overlay: overlay(), types: model && model.types, layers: document.body ? layers().map(info) : [], canvas: canvas && info(canvas),
       // Popups éventuels à l'intérieur du conteneur du canvas (non couverts par layers())
       positioned: document.body ? [...document.body.querySelectorAll('*')].filter((el) => !(root && root.contains(el)) && /absolute|fixed/.test(getComputedStyle(el).position) && shown(el)).slice(0, 40).map(info) : [] };
     if (!date || !model || !model.ok) return { ...out, model };
